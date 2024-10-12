@@ -1,118 +1,93 @@
-// WebUI C - Minimal Example
-
 #include "webui.h"
-#include "myLog.h"
 
-
-//#define printf log_to_file
-
-#define MyWindow 	(1)
-#define MySecondWindow  (2)
-
-void exit_app(webui_event_t* e)
-{
-	// close all opened windows
-	webui_exit(); 
-}
-
-const void* filesHandler(const char* filename, int* length)
-{
-    printf("filesHandler\n");
-    return NULL;  
-}
-
-void my_function_with_response(webui_event_t* e)
-{
-    //// JavaScript:
-	// my_function_with_response(number, 2).then(...)
-
-	long long number = webui_get_int(e); // Or webui_get_int_at(e, 0);
-	long long times = webui_get_int_at(e, 1);
-
-	long long res = number * times;
-	printf("my_function_with_response: %lld * %lld = %lld\n", number, times, res);
-
-	// Send back the response to JavaScript
-	webui_return_int(e, res);
-}
-
-void my_function_string(webui_event_t* e)
-{
-    //JavaScript
-    //my_function_string('Hello', 'World'); 
+void my_function_string(webui_event_t* e) {
     const char* str_1 = webui_get_string(e); // Or webui_get_string_at(e, 0);
     const char* str_2 = webui_get_string_at(e, 1);
 
     printf("my_function_string 1: %s\n", str_1); // Hello
-	printf("my_function_string 2: %s\n", str_2); // World
-
+    printf("my_function_string 2: %s\n", str_2); // World
 }
 
+void my_function_integer(webui_event_t* e) {
+    size_t count = webui_get_count(e);
+    printf("my_function_integer: There is %zu arguments in this event\n", count); // 4
 
+    long long number_1 = webui_get_int(e); // Or webui_get_int_at(e, 0);
+    long long number_2 = webui_get_int_at(e, 1);
+    long long number_3 = webui_get_int_at(e, 2);
 
-void events(webui_event_t* e) {
+    printf("my_function_integer 1: %lld\n", number_1); // 123
+    printf("my_function_integer 2: %lld\n", number_2); // 456
+    printf("my_function_integer 3: %lld\n", number_3); // 789
 
-    // This function gets called every time
-    // there is an event
-    printf("events. \n");
+    double float_1 = webui_get_float_at(e, 3);
 
-    if (e->event_type == WEBUI_EVENT_CONNECTED)
-        printf("Connected. \n");
-    else if (e->event_type == WEBUI_EVENT_DISCONNECTED)
-        printf("Disconnected. \n");
-    else if (e->event_type == WEBUI_EVENT_MOUSE_CLICK)
-        printf("Click. \n");
-    else if (e->event_type == WEBUI_EVENT_NAVIGATION) {
-        const char* url = webui_get_string(e);
-        printf("Starting navigation to: %s \n", url);
-
-        // Because we used `webui_bind(MyWindow, "", events);`
-        // WebUI will block all `href` link clicks and sent here instead.
-        // We can then control the behaviour of links as needed.
-        webui_navigate(e->window, url);
-    }
+    printf("my_function_integer 4: %f\n", float_1); // 12345.6789
 }
 
+void my_function_boolean(webui_event_t* e) {
+    bool status_1 = webui_get_bool(e); // Or webui_get_bool_at(e, 0);
+    bool status_2 = webui_get_bool_at(e, 1);
 
+    printf("my_function_boolean 1: %s\n", (status_1 ? "True" : "False")); // True
+    printf("my_function_boolean 2: %s\n", (status_2 ? "True" : "False")); // False
+}
+
+void my_function_raw_binary(webui_event_t* e) {
+    const unsigned char* raw_1 = (const unsigned char*)webui_get_string(e); // Or webui_get_string_at(e, 0);
+    const unsigned char* raw_2 = (const unsigned char*)webui_get_string_at(e, 1);
+
+    int len_1 = (int)webui_get_size(e); // Or webui_get_size_at(e, 0);
+    int len_2 = (int)webui_get_size_at(e, 1);
+
+    // Print raw_1
+    printf("my_function_raw_binary 1 (%d bytes): ", len_1);
+    for (size_t i = 0; i < len_1; i++)
+        printf("0x%02x ", raw_1[i]);
+    printf("\n");
+
+    // Check raw_2 (Big)
+    // [0xA1, 0x00..., 0xA2]
+    bool valid = false;
+    if (raw_2[0] == 0xA1 && raw_2[len_2 - 1] == 0xA2)
+        valid = true;
+
+    // Print raw_2
+    printf("my_function_raw_binary 2 big (%d bytes): valid data? %s\n", len_2, (valid ? "Yes" : "No"));
+}
+
+void my_function_with_response(webui_event_t* e) {
+    long long number = webui_get_int(e); // Or webui_get_int_at(e, 0);
+    long long times = webui_get_int_at(e, 1);
+
+    long long res = number * times;
+    printf("my_function_with_response: %lld * %lld = %lld\n", number, times, res);
+
+    // Send back the response to JavaScript
+    webui_return_int(e, res);
+}
 
 int main() {
-    initialize_log_file();
-     // Redirect stdout and stderr to the console
-   
-	// create new window 
-	webui_new_window_id(MyWindow); 
-    printf("start. \n");
-	//bind html element ids with a c function 
-	webui_bind(MyWindow, "Exit", exit_app); 
+    // Create a window
+    size_t my_window = webui_new_window();
 
-	//bind events 
-	webui_bind(MyWindow, "", events); 
-    webui_bind(MyWindow, "my_function_with_response", my_function_with_response);
-	// Set the `.ts` and `.js` runtime
-    webui_set_runtime(MyWindow, Deno);
-   
-     // Set a custom files handler
-    webui_set_file_handler(MyWindow, filesHandler);
+    // Bind HTML elements with C functions
+    webui_bind(my_window, "my_function_string", my_function_string);
+    webui_bind(my_window, "my_function_integer", my_function_integer);
+    webui_bind(my_window, "my_function_boolean", my_function_boolean);
+    webui_bind(my_window, "my_function_with_response", my_function_with_response);
+    webui_bind(my_window, "my_function_raw_binary", my_function_raw_binary);
 
-    // Set window size
-    webui_set_size(MyWindow, 800, 800);
+    // Show the window
+    webui_show(my_window, "index.html"); // webui_show_browser(my_window, "index.html", Chrome);
 
-    // Set window position
-    webui_set_position(MyWindow, 200, 200);
-
-    // Show a new window
-    // webui_set_root_folder(MyWindow, "_MY_PATH_HERE_");
-    // webui_show_browser(MyWindow, "index.html", Chrome);
-    webui_show(MyWindow, "index.html");
-    
-    
     // Wait until all windows get closed
     webui_wait();
 
     // Free all memory resources (Optional)
     webui_clean();
 
-	return 0;
+    return 0;
 }
 
 #if defined(_MSC_VER)

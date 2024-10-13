@@ -67,6 +67,36 @@ void my_function_with_response(webui_event_t* e) {
     webui_return_int(e, res);
 }
 
+// c -> js 
+void my_function_count(webui_event_t* e)
+{
+    // This function gets called every time the user clicks on "my_function_count"
+
+	// Create a buffer to hold the response
+    char response[64]; 
+    //run java script 
+    if(!webui_script(e->window, "return GetCount();", 0, response, 64)){
+        if(!webui_is_shown(e->window))
+            printf("Window closed.\n"); 
+        else 
+            printf("JavaScript Error: %s\n", response); 
+        return; 
+    }
+
+    // get the count 
+    int count = atoi(response); 
+
+    // Increment 
+    count++; 
+
+    // Generate a javascript 
+    char js[64]; 
+    sprintf(js, "SetCount(%d);", count); 
+
+    //run javaScript(Quick Way)
+    webui_run(e->window, js); 
+}
+
 int main() {
     // Create a window
     size_t my_window = webui_new_window();
@@ -77,7 +107,7 @@ int main() {
     webui_bind(my_window, "my_function_boolean", my_function_boolean);
     webui_bind(my_window, "my_function_with_response", my_function_with_response);
     webui_bind(my_window, "my_function_raw_binary", my_function_raw_binary);
-
+    webui_bind(my_window, "my_function_count", my_function_count); 
     // Show the window
     webui_show(my_window, "index.html"); // webui_show_browser(my_window, "index.html", Chrome);
 

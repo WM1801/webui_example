@@ -5,7 +5,12 @@
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_DIR := $(dir $(MAKEFILE_PATH))/
 TARGET := $(firstword $(MAKECMDGOALS))
-LIB_DIR := $(PROJECT_DIR)/dist
+# Platform conditions
+ifeq ($(OS),Windows_NT)
+	LIB_DIR := $(PROJECT_DIR)/dist/windows
+else
+	LIB_DIR := $(PROJECT_DIR)/dist/linux
+endif
 ifeq ($(TARGET), debug)
 LIB_DIR := $(LIB_DIR)/debug
 endif
